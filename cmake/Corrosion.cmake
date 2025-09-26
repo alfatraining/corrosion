@@ -115,6 +115,7 @@ function(_corrosion_bin_target_suffix target_name out_var_suffix)
 endfunction()
 
 function(_corrosion_determine_host_compiler)
+    # Create minimal CMakeLists.txt to be generated for the host.
     set(package_dir "${CMAKE_BINARY_DIR}/corrosion/host_compiler")
     file(REMOVE_RECURSE "${package_dir}")
     file(MAKE_DIRECTORY "${package_dir}")
@@ -122,20 +123,43 @@ function(_corrosion_determine_host_compiler)
     string(APPEND lists "project(DetermineHostCompiler)\n")
     string(APPEND lists "message(STATUS \"HOST_C_COMPILER=\${CMAKE_C_COMPILER}\")\n")
     string(APPEND lists "message(STATUS \"HOST_CXX_COMPILER=\${CMAKE_CXX_COMPILER}\")\n")
-    string(APPEND lists "add_executable(main main.cpp)\n")
     file(WRITE "${package_dir}/CMakeLists.txt" "${lists}")
-    file(WRITE "${package_dir}/main.cpp" "int main() { return 0; }\n")
 
+    # Generate the CMake project.
     execute_process(
-        COMMAND ${CMAKE_COMMAND} -E cmake
+        COMMAND ${CMAKE_COMMAND}
+            -DCMAKE_CROSSCOMPILING=OFF
+            "${package_dir}"
         WORKING_DIRECTORY "${package_dir}"
-        RESULT_VARIABLE cmake_build_result
+        OUTPUT_VARIABLE host_detection_output
+        ERROR_VARIABLE host_detection_error
+        RESULT_VARIABLE host_detection_result
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_STRIP_TRAILING_WHITESPACE
     )
 
-    message(STATUS ${cmake_build_result})
-    # TODO: Parse output.
-endfunction()
+    # Abort at error in the generation.
+    if(NOT host_detection_result EQUAL 0)
+        message(WARNING "Failed to detect host compiler. Result: ${host_detection_result}")
+        message(WARNING "Output: ${host_detection_output}")
+        message(WARNING "Error: ${host_detection_result}")
+        return()
+    endif()
 
+    # Extract C compiler from the output.
+    string(REGEX MATCH "HOST_C_COMPILER=([^\r\n]*)" HOST_C_COMPILER_MATCH "${host_detection_output}")
+    if(HOST_C_COMPILER_MATCH)
+        set(CORROSION_HOST_C_COMPILER "${CMAKE_MATCH_1}" PARENT_SCOPE)
+        message(STATUS "CORROSION_HOST_C_COMPILER=${CMAKE_MATCH_1}")
+    endif()
+
+    # Extract C++ compiler from the output.
+    string(REGEX MATCH "HOST_CXX_COMPILER=([^\r\n]*)" HOST_CXX_COMPILER_MATCH "${host_detection_output}")
+    if(HOST_CXX_COMPILER_MATCH)
+        set(CORROSION_HOST_CXX_COMPILER "${CMAKE_MATCH_1}" PARENT_SCOPE)
+        message(STATUS "CORROSION_HOST_CXX_COMPILER=${CMAKE_MATCH_1}")
+    endif()
+endfunction()
 
 # Do not call this function directly!
 #
