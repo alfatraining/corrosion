@@ -147,15 +147,15 @@ function(_corrosion_determine_host_compiler)
     endif()
 
     # Extract C compiler from the output.
-    string(REGEX MATCH "HOST_C_COMPILER=([^\r\n]*)" HOST_C_COMPILER_MATCH "${host_detection_output}")
-    if(HOST_C_COMPILER_MATCH)
+    string(REGEX MATCH "HOST_C_COMPILER=([^\r\n]*)" host_c_compiler_match "${host_detection_output}")
+    if(host_c_compiler_match)
         set(CORROSION_HOST_C_COMPILER "${CMAKE_MATCH_1}" PARENT_SCOPE)
         message(STATUS "CORROSION_HOST_C_COMPILER=${CMAKE_MATCH_1}")
     endif()
 
     # Extract C++ compiler from the output.
-    string(REGEX MATCH "HOST_CXX_COMPILER=([^\r\n]*)" HOST_CXX_COMPILER_MATCH "${host_detection_output}")
-    if(HOST_CXX_COMPILER_MATCH)
+    string(REGEX MATCH "HOST_CXX_COMPILER=([^\r\n]*)" host_cxx_compiler_match "${host_detection_output}")
+    if(host_cxx_compiler_match)
         set(CORROSION_HOST_CXX_COMPILER "${CMAKE_MATCH_1}" PARENT_SCOPE)
         message(STATUS "CORROSION_HOST_CXX_COMPILER=${CMAKE_MATCH_1}")
     endif()
