@@ -114,6 +114,29 @@ function(_corrosion_bin_target_suffix target_name out_var_suffix)
     set(${out_var_suffix} "${_suffix}" PARENT_SCOPE)
 endfunction()
 
+function(_corrosion_determine_host_compiler)
+    set(package_dir "${CMAKE_BINARY_DIR}/corrosion/host_compiler")
+    file(REMOVE_RECURSE "${package_dir}")
+    file(MAKE_DIRECTORY "${package_dir}")
+    set(lists "cmake_minimum_required(VERSION 3.10)\n")
+    string(APPEND lists "project(DetermineHostCompiler)\n")
+    string(APPEND lists "message(STATUS \"HOST_C_COMPILER=\${CMAKE_C_COMPILER}\")\n")
+    string(APPEND lists "message(STATUS \"HOST_CXX_COMPILER=\${CMAKE_CXX_COMPILER}\")\n")
+    string(APPEND lists "add_executable(main main.cpp)\n")
+    file(WRITE "${package_dir}/CMakeLists.txt" "${lists}")
+    file(WRITE "${package_dir}/main.cpp" "int main() { return 0; }\n")
+
+    execute_process(
+        COMMAND ${CMAKE_COMMAND} -E cmake
+        WORKING_DIRECTORY "${package_dir}"
+        RESULT_VARIABLE cmake_build_result
+    )
+
+    message(STATUS ${cmake_build_result})
+    # TODO: Parse output.
+endfunction()
+
+
 # Do not call this function directly!
 #
 # This function should be called deferred to evaluate target properties late in the configure stage.
@@ -767,6 +790,7 @@ function(_add_cargo_build out_cargo_build_out_dir)
 
     # TODO: How to get a working host compiler properly? configure a dummy cmake project for the host?
     list(APPEND corrosion_cc_rs_flags "CARGO_TARGET_AARCH64_APPLE_DARWIN_LINKER=/usr/bin/cc")
+    _corrosion_determine_host_compiler()
 
     # Since we instruct cc-rs to use the compiler found by CMake, it is likely one that requires also
     # specifying the target sysroot to use. CMake's generator makes sure to pass --sysroot with
